@@ -15,6 +15,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Professor {
+   //
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
