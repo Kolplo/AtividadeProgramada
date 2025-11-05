@@ -19,12 +19,14 @@ public class ProfessorController {
 
     //mostra todos os professsores
     @GetMapping
-    public List<Professor> ListarProfessor() {
-        return professorService.listarProfessor();
+    public ResponseEntity<List<Professor>> listarProfessores() {
+        List<Professor> professores = professorService.listarProfessor();
+        return ResponseEntity.ok(professores);
     }
 
+
     //busca o professor pelo id
-    @GetMapping("/{id}")
+    @GetMapping("/{id}") //api/colocar id
     public ResponseEntity<Professor> buscarProfessor(@PathVariable String id) {
         return professorService.buscarIdProfessor(id)
                 .map(ResponseEntity::ok)
@@ -32,6 +34,13 @@ public class ProfessorController {
     }
 
     //Adciona novos prfessores ao bd
+    /* exemplo de post no postman
+    {
+        "nome": "Sara",
+        "email": "sara@gmail.com",
+        "telefone":"123456"
+     }
+     */
     @PostMapping
     public ResponseEntity<Professor> adicionarProfessor(@RequestBody Professor professor) {
         Professor novoProfessor = professorService.salvarProfessor(professor);
@@ -39,7 +48,7 @@ public class ProfessorController {
     }
 
     //deletar professor por id
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id}")//api/id do usuario aqui
     public ResponseEntity<?> deletarProfessor(@PathVariable String id) {
         professorService.excluirProfessor(id);
         return ResponseEntity.ok().build();
@@ -52,7 +61,7 @@ public class ProfessorController {
         return ResponseEntity.ok(alterarProfessor);
     }
 
-    @GetMapping("/{nome}")
+    @GetMapping("/nome")///api/nome?nome=
     public ResponseEntity<?> buscarPorNome(@RequestParam String nome) {
         return professorService.buscarProfessorNome(nome)
                 .map(ResponseEntity::ok)
