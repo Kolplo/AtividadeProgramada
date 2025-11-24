@@ -62,8 +62,8 @@ public class ProfessorController {
     }
 
     @GetMapping("/nome")///api/nome?nome=
-    public ResponseEntity<?> buscarPorNome(@RequestParam String nome) {
-        return professorService.buscarProfessorNome(nome)
+    public ResponseEntity<?> buscarPorEmail(@RequestParam String email) {
+        return professorService.buscarProfessorEmail(email)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

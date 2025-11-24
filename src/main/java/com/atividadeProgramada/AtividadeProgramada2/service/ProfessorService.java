@@ -37,7 +37,7 @@ public class ProfessorService {
                 .map(p -> {
                     p.setNome(professor.getNome());
                     p.setEmail(professor.getEmail());
-                    p.setTelefone(professor.getTelefone());
+                    p.setSenha(professor.getSenha());
                     return professorRepository.save(p);
                 })
                 .orElseThrow(() -> new RuntimeException("Professor não encontrado"));
@@ -45,8 +45,8 @@ public class ProfessorService {
 
     }
 
-   public Optional<Professor> buscarProfessorNome(String nome) {
-        return professorRepository.findByNome(nome);
+   public Optional<Professor> buscarProfessorEmail(String email) {
+        return professorRepository.findByEmail(email);
 
     }
 }
