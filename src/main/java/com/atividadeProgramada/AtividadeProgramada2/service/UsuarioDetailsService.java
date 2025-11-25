@@ -1,13 +1,12 @@
 package com.atividadeProgramada.AtividadeProgramada2.service;
 
+import com.atividadeProgramada.AtividadeProgramada2.entity.Usuario;
+import com.atividadeProgramada.AtividadeProgramada2.repository.UsuarioRepository;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import com.atividadeProgramada.AtividadeProgramada2.entity.Usuario;
-import com.atividadeProgramada.AtividadeProgramada2.repository.UsuarioRepository;
 
 @Service
 public class UsuarioDetailsService implements UserDetailsService {
@@ -20,16 +19,14 @@ public class UsuarioDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-       
-        Usuario usuario = usuarioRepository.findByUsername(username)
-                            .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
-       
+
+        // aqui 'username' será o email
+        Usuario usuario = usuarioRepository.findByEmail(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
+
         return User.builder()
-                .username(usuario.getUsername())
+                .username(usuario.getEmail())
                 .password(usuario.getPassword())
                 .roles("USER")
-                .build();
-    }
-    
-}
-
+                .build(); 
+            }}
