@@ -103,7 +103,6 @@
             const campo = button.getAttribute('data-campo');
             let valor = prompt("Alterar Para:");
 
-            // se cancelar ou mandar vazio
             if (valor === null || valor.trim() === "") {
                 alert("Operação cancelada ou valor inválido!");
                 return;
@@ -155,14 +154,12 @@
 
                     if (response.ok) {
 
-                        // 🔥 DELETAR TODOS OS COOKIES
                         document.cookie.split(";").forEach(c => {
                             document.cookie = c
                                 .replace(/^ +/, "")
                                 .replace(/=.*/, "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Lax");
                         });
 
-                        // Redireciona após apagar cookies
                         window.location.href = '/auth';
 
                     } else {
