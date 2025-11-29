@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QualyMentos - Login</title>
+    <link rel="stylesheet" th:href="@{/css/style-auth.css}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="auth-container">
+
+
+        <div id="register-page">
+            <div class="auth-card">
+
+                <div class="auth-header">
+                    <span class="logo-text">QualyMentos</span>
+
+                    <p>Rastreie sua produção com facilidade.</p>
+                </div>
+
+                <form id="form-Cadastro" class="auth-form">
+                    <div class="form-group-display">
+                        <label>Proprietário:</label>
+                        <div class="data-value" th:text="${usuario.nome}"></div>
+
+                        <button type="button" onclick="prop_edit(this)" data-campo="nome" data-id="${usuario.id}"
+                            class="btn-empty">
+                            Alterar nome
+                        </button>
+                    </div>
+
+
+                    <div class="auth-footer">
+                        <p><a onclick="togglePage()">Alterar senha</a></p>
+                    </div>
+                    <div class="auth-footer">
+                        <p><a onclick="excluir()">EXCLUIR CONTA</a></p>
+                    </div>
+            </div>
+        </div>
+
+        <div id="login-page" class="hidden">
+            <div class="auth-card">
+
+                <div class="auth-header">
+                    <span class="logo-text">QualyMentos</span>
+
+                    <p th:text="'Olá ' + ${usuario.nome} + ', Confira seus dados.'"></p>
+                </div>
+
+                <form id="form-login" class="auth-form">
+                    <div class="form-group">
+                        <label for="senha">Nova senha</label>
+                        <input type="password" id="senha" name="senhan" placeholder="Nova senha" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="senha">Senha Atual</label>
+                        <input type="password" id="senha" name="senha" placeholder="senha Atual" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Alterar</button>
+
+
+                </form>
+
+                <div class="auth-footer">
+                    <p><a onclick="togglePage()">voltar</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+
+        const formLogin = document.getElementById('form-login');
+        formLogin.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dadosL = Object.fromEntries(new FormData(formLogin).entries());
+            try {
+                const resp = await fetch("http://localhost:8080/usuario", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(dadosL)
+                });
+
+                if (resp.ok) {
+                    window.location.href = "/usuario/dashboard";
+                } else {
+                    const erro = await resp.text();
+                    alert("Erro ao logar: " + erro);
+                }
+            } catch (err) {
+                alert("Erro de conexão com o servidor: " + err.message);
+            }
+        });
+        async function prop_edit(button) {
+            const id = button.getAttribute('data-id');
+            const campo = button.getAttribute('data-campo');
+            let valor = prompt("Alterar Para:");
+
+            // se cancelar ou mandar vazio
+            if (valor === null || valor.trim() === "") {
+                alert("Operação cancelada ou valor inválido!");
+                return;
+            }
+
+            valor = valor.trim();
+
+            const dados = {
+                id: id,
+                campo: campo,
+
+                valor: valor
+            };
+
+            try {
+                const resp = await fetch("/usuario/alt", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(dados)
+                });
+
+                if (resp.ok) {
+                    alert("Campo atualizado com sucesso!");
+                    window.location.href = '/usuario/propriedades';
+
+                } else {
+                    const erro = await resp.text();
+                    alert("Erro ao atualizar: " + erro);
+                }
+            } catch (err) {
+                alert("Erro de conexão: " + err.message);
+            }
+        }
+
+
+        function togglePage() {
+            document.getElementById("login-page").classList.toggle("hidden");
+            document.getElementById("register-page").classList.toggle("hidden");
+        }
+        function excluir() {
+            if (confirm("Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.")) {
+
+                fetch('/usuario', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }).then(response => {
+
+                    if (response.ok) {
+
+                        // 🔥 DELETAR TODOS OS COOKIES
+                        document.cookie.split(";").forEach(c => {
+                            document.cookie = c
+                                .replace(/^ +/, "")
+                                .replace(/=.*/, "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;SameSite=Lax");
+                        });
+
+                        // Redireciona após apagar cookies
+                        window.location.href = '/auth';
+
+                    } else {
+                        alert('Erro ao deletar a conta.');
+                    }
+
+                }).catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao deletar a conta.');
+                });
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
