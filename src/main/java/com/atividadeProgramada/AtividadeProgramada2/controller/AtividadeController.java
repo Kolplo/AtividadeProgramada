@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Controller
 @RequestMapping("/atividade")
@@ -29,6 +32,8 @@ public class AtividadeController {
     private final AtividadeService atividadeService;
     private final AlunoRepository alunoRepository;
     private final AtividadeRepository atividadeRepository;
+    // In-memory cache of atividades per usuario (thread-safe)
+    private final Map<Long, CopyOnWriteArrayList<Atividade>> atividadesCache = new ConcurrentHashMap<>();
     
     @GetMapping
     public String listarAtividades(Authentication authentication, Model model) {
@@ -37,7 +42,10 @@ public class AtividadeController {
         }
         Usuario usuario = (Usuario) authentication.getPrincipal();
         List<Aluno> alunos = alunoRepository.findByUsuario(usuario);
-        var atividades = atividadeRepository.findByUsuario(usuario);
+        // Load from in-memory cache if present, otherwise initialize from DB
+        CopyOnWriteArrayList<Atividade> atividades = atividadesCache.computeIfAbsent(
+            usuario.getId(), id -> new CopyOnWriteArrayList<>(atividadeRepository.findByUsuario(usuario))
+        );
         logger.debug("[listarAtividades] usuario.id={} alunos.count={} atividades.count={}",
                 usuario != null ? usuario.getId() : null,
                 alunos != null ? alunos.size() : 0,
@@ -107,6 +115,10 @@ public class AtividadeController {
 
         Atividade saved = atividadeService.createAtividade(atividade);
         logger.debug("[criarAtividade] atividade salva id={} usuarioId={}", saved != null ? saved.getId() : null, usuario != null ? usuario.getId() : null);
+        // add to in-memory cache
+        if (saved != null && usuario != null && usuario.getId() != null) {
+            atividadesCache.computeIfAbsent(usuario.getId(), id -> new CopyOnWriteArrayList<>()).add(saved);
+        }
         return ResponseEntity.ok().build();
     }
 
@@ -144,14 +156,30 @@ public class AtividadeController {
         }
         atividade.setStatus(status != null ? status : "Pendente");
         atividade.setUsuario(usuario);
-        atividadeService.createAtividade(atividade);
+        Atividade saved = atividadeService.createAtividade(atividade);
+        if (saved != null && usuario != null && usuario.getId() != null) {
+            atividadesCache.computeIfAbsent(usuario.getId(), id -> new CopyOnWriteArrayList<>()).add(saved);
+        }
         return "redirect:/atividade";
     }
     
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletarAtividade(@PathVariable Long id) {
-        atividadeService.deleteAtividade(id);
-        return ResponseEntity.ok().build();
+        // attempt to remove from cache for the owning user
+        try {
+            Atividade existing = atividadeService.getAtividadeById(id);
+            Long usuarioId = existing != null && existing.getUsuario() != null ? existing.getUsuario().getId() : null;
+            atividadeService.deleteAtividade(id);
+            if (usuarioId != null) {
+                var list = atividadesCache.get(usuarioId);
+                if (list != null) {
+                    list.removeIf(a -> a.getId() != null && a.getId().equals(id));
+                }
+            }
+            return ResponseEntity.ok().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body("Erro ao deletar atividade: " + ex.getMessage());
+        }
     }
 
     // Temporary test endpoint to create a sample atividade for the authenticated user
@@ -175,6 +203,29 @@ public class AtividadeController {
         atividade.setUsuario(usuario);
         atividadeService.createAtividade(atividade);
         return ResponseEntity.ok("Atividade de teste criada com sucesso");
+    }
+
+    // Diagnostic endpoint: raw count and list of atividades for authenticated user
+    @GetMapping("/diag")
+    public ResponseEntity<?> diagnostico(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Usuário não autenticado");
+        }
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+        java.util.Map<String, Object> diag = new java.util.HashMap<>();
+        diag.put("usuario_id", usuario.getId());
+        diag.put("usuario_email", usuario.getEmail());
+        
+        // Try to count all atividades in DB (without user filter)
+        long totalAtividades = atividadeRepository.count();
+        diag.put("total_atividades_db", totalAtividades);
+        
+        // Try findByUsuario
+        var atividadesPorUsuario = atividadeRepository.findByUsuario(usuario);
+        diag.put("atividades_por_usuario_count", atividadesPorUsuario != null ? atividadesPorUsuario.size() : 0);
+        diag.put("atividades_por_usuario", atividadesPorUsuario);
+        
+        return ResponseEntity.ok(diag);
     }
 
     @GetMapping("/editar/{id}")
@@ -223,6 +274,24 @@ public class AtividadeController {
         }
         existing.setStatus(request.status != null ? request.status : existing.getStatus());
         atividadeService.updateAtividade(existing);
+        // update in cache
+        try {
+            Long uId = existing.getUsuario() != null ? existing.getUsuario().getId() : null;
+            if (uId != null) {
+                var list = atividadesCache.get(uId);
+                if (list != null) {
+                    for (int i = 0; i < list.size(); i++) {
+                        Atividade a = list.get(i);
+                        if (a.getId() != null && a.getId().equals(existing.getId())) {
+                            list.set(i, existing);
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("[atualizarAtividade] não foi possível atualizar cache: {}", e.getMessage());
+        }
         return "redirect:/atividade";
     }
 

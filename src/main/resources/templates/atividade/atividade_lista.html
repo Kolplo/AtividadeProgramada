@@ -189,8 +189,6 @@
                 <ul>
                     <li><a href="/aluno">📚 Alunos</a></li>
                     <li><a href="/atividade" class="active">📝 Atividades</a></li>
-                    <li><a href="/usuario">👤 Perfil</a></li>
-                    <li><a href="/logout" style="color: #f56565; margin-top: 20px;">🚪 Sair</a></li>
                 </ul>
             </nav>
         </div>
@@ -211,11 +209,11 @@
                 <div class="stats-row">
                     <div class="stat-card">
                         <div class="stat-card-title">Total de Atividades</div>
-                        <div class="stat-card-value">--</div>
+                        <div class="stat-card-value" th:text="${totalAtividades}">--</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-title">Concluídas</div>
-                        <div class="stat-card-value">--</div>
+                        <div class="stat-card-value" th:text="${concluidas}">--</div>
                     </div>
                 </div>
 
@@ -251,24 +249,24 @@
                     <h2>Atividades Recentes</h2>
                 </div>
 
-                <div class="timeline">
-                    <div th:if="${atividades == null or atividades.size() == 0}" class="empty-state">
-                        <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
-                        <div>Nenhuma atividade registrada ainda</div>
-                    </div>
+<div class="timeline">
+    <table th:if="${atividades.size() > 0}">
+        <thead>
+            <tr>
+                <th>Aluno </th>
+                <th>Descrição</th>
+                <th>Data</th>
+            </tr>
+        </thead>
 
-                    <div th:each="ativ : ${atividades}" class="timeline-item">
-                        <div class="timeline-item-title" th:text="${ativ.descricao}">Descrição</div>
-                        <div class="timeline-item-meta">
-                            <span th:text="${ativ.aluno != null ? ativ.aluno.nome : 'Sem aluno'}">Aluno</span>
-                             •
-                            <span th:text="${#dates.format(ativ.data, 'dd/MM/yyyy HH:mm')}">Data</span>
-                        </div>
-                        <div class="timeline-item-description">
-                            <span th:text="${ativ.status}">Status</span>
-                        </div>
-                    </div>
-                </div>
+        <tbody>
+            <tr th:each="atividade : ${atividades}">
+                <td th:text="${atividade.aluno != null ? atividade.aluno.nome : 'Sem aluno'}" class="empty-state"></td>
+                <td th:text="${atividade.descricao}"></td>
+                <td th:text="${atividade.data}"></td>
+            </tr>
+        </tbody>
+    </table>
             </div>
         </div>
     </div>
