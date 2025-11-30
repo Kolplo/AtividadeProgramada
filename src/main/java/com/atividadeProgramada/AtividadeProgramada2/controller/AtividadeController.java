@@ -32,7 +32,6 @@ public class AtividadeController {
     private final AtividadeService atividadeService;
     private final AlunoRepository alunoRepository;
     private final AtividadeRepository atividadeRepository;
-    // In-memory cache of atividades per usuario (thread-safe)
     private final Map<Long, CopyOnWriteArrayList<Atividade>> atividadesCache = new ConcurrentHashMap<>();
     
     @GetMapping
@@ -42,7 +41,7 @@ public class AtividadeController {
         }
         Usuario usuario = (Usuario) authentication.getPrincipal();
         List<Aluno> alunos = alunoRepository.findByUsuario(usuario);
-        // Load from in-memory cache if present, otherwise initialize from DB
+
         CopyOnWriteArrayList<Atividade> atividades = atividadesCache.computeIfAbsent(
             usuario.getId(), id -> new CopyOnWriteArrayList<>(atividadeRepository.findByUsuario(usuario))
         );
@@ -55,7 +54,7 @@ public class AtividadeController {
         }
         model.addAttribute("alunos", alunos);
         model.addAttribute("atividades", atividades);
-        // counts for dashboard
+ 
         int total = atividades != null ? atividades.size() : 0;
         long concluidas = 0;
         if (atividades != null) {
@@ -68,7 +67,6 @@ public class AtividadeController {
         return "atividade/atividade_lista";
     }
 
-    // Debug endpoint: returns atividades for current user as JSON
     @GetMapping("/debug/json")
     @ResponseBody
     public ResponseEntity<?> atividadesJson(Authentication authentication) {
@@ -92,16 +90,16 @@ public class AtividadeController {
         atividade.setAluno(aluno);
         atividade.setDescricao(request.descricao);
 
-        // Parse date string safely: accept ISO_LOCAL_DATE (yyyy-MM-dd) or ISO_LOCAL_DATE_TIME
+
         try {
             if (request.data == null || request.data.isBlank()) {
                 atividade.setData(LocalDateTime.now());
             } else {
-                // try parse as LocalDateTime first
+    
                 try {
                     atividade.setData(LocalDateTime.parse(request.data));
                 } catch (Exception e) {
-                    // fallback to parse as LocalDate and set start of day
+  
                     java.time.LocalDate ld = java.time.LocalDate.parse(request.data);
                     atividade.setData(ld.atStartOfDay());
                 }
@@ -115,14 +113,14 @@ public class AtividadeController {
 
         Atividade saved = atividadeService.createAtividade(atividade);
         logger.debug("[criarAtividade] atividade salva id={} usuarioId={}", saved != null ? saved.getId() : null, usuario != null ? usuario.getId() : null);
-        // add to in-memory cache
+        
         if (saved != null && usuario != null && usuario.getId() != null) {
             atividadesCache.computeIfAbsent(usuario.getId(), id -> new CopyOnWriteArrayList<>()).add(saved);
         }
         return ResponseEntity.ok().build();
     }
 
-    // Accept regular form submissions from the activity form (application/x-www-form-urlencoded)
+
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public String criarAtividadeForm(@RequestParam String alunoId,
                                      @RequestParam String descricao,
@@ -165,7 +163,7 @@ public class AtividadeController {
     
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletarAtividade(@PathVariable Long id) {
-        // attempt to remove from cache for the owning user
+
         try {
             Atividade existing = atividadeService.getAtividadeById(id);
             Long usuarioId = existing != null && existing.getUsuario() != null ? existing.getUsuario().getId() : null;
@@ -182,14 +180,13 @@ public class AtividadeController {
         }
     }
 
-    // Temporary test endpoint to create a sample atividade for the authenticated user
     @GetMapping("/test-create")
     public ResponseEntity<?> testarCriacao(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).body("Usuário não autenticado");
         }
         Usuario usuario = (Usuario) authentication.getPrincipal();
-        // try to find any aluno for this user
+       
         var alunos = alunoRepository.findByUsuario(usuario);
         if (alunos == null || alunos.isEmpty()) {
             return ResponseEntity.badRequest().body("Usuário não possui alunos cadastrados para vincular a atividade");
@@ -205,7 +202,7 @@ public class AtividadeController {
         return ResponseEntity.ok("Atividade de teste criada com sucesso");
     }
 
-    // Diagnostic endpoint: raw count and list of atividades for authenticated user
+
     @GetMapping("/diag")
     public ResponseEntity<?> diagnostico(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -216,11 +213,10 @@ public class AtividadeController {
         diag.put("usuario_id", usuario.getId());
         diag.put("usuario_email", usuario.getEmail());
         
-        // Try to count all atividades in DB (without user filter)
         long totalAtividades = atividadeRepository.count();
         diag.put("total_atividades_db", totalAtividades);
         
-        // Try findByUsuario
+    
         var atividadesPorUsuario = atividadeRepository.findByUsuario(usuario);
         diag.put("atividades_por_usuario_count", atividadesPorUsuario != null ? atividadesPorUsuario.size() : 0);
         diag.put("atividades_por_usuario", atividadesPorUsuario);
@@ -274,7 +270,7 @@ public class AtividadeController {
         }
         existing.setStatus(request.status != null ? request.status : existing.getStatus());
         atividadeService.updateAtividade(existing);
-        // update in cache
+   
         try {
             Long uId = existing.getUsuario() != null ? existing.getUsuario().getId() : null;
             if (uId != null) {
@@ -297,11 +293,11 @@ public class AtividadeController {
 
     @PostMapping("/{id}")
     public String atualizarAtividadePost(@PathVariable Long id, @ModelAttribute("atividade") AtividadeRequest request, Authentication authentication) {
-        // delegate to PUT handler by converting AtividadeRequest to same structure
+
         return atualizarAtividade(id, request, authentication);
     }
     
-    // Request DTO
+
     public static class AtividadeRequest {
         public String alunoId;
         public String descricao;

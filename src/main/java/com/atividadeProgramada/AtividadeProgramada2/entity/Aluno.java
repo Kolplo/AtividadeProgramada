@@ -55,18 +55,3 @@ public class Aluno {
     private List<Atividade> atividades = new ArrayList<>();
 
 }
-/*
-atributos de propriedade
-
-Long id
-String nome
-String codigoRural
-String areaTotal
-String tipoSolo
-String tipoProducao
-String tipoCultura
-String fone
-Cidade cidade
-Usuario usuario
-List<Grao> graos
-*/

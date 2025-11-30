@@ -18,7 +18,7 @@ public class UsuarioController {
 
     @GetMapping
     public String user() {
-        // Redirect to the alunos listing which prepares the required model
+      
         return "ok";
     }
 

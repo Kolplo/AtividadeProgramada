@@ -65,7 +65,7 @@ public class AuthController {
         usuario.setPassword(passwordEncoder.encode(senha));
         usuarioRepository.save(usuario);
 
-        // auto-login: generate token and set cookie
+     
         String token = tokenService.generateToken(usuario);
         Cookie cookie = new Cookie("jwt", token);
         cookie.setHttpOnly(true);
@@ -87,7 +87,7 @@ public class AuthController {
             Cookie cookie = new Cookie("jwt", token);
             cookie.setHttpOnly(true);
             cookie.setPath("/");
-            // optionally set secure and maxAge
+       
             response.addCookie(cookie);
 
             return ResponseEntity.ok().build();

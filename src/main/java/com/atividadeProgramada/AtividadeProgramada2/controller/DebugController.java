@@ -28,7 +28,7 @@ public class DebugController {
     public ResponseEntity<Map<String, Object>> authDebug(HttpServletRequest request) {
         Map<String, Object> out = new HashMap<>();
 
-        // 1) Check cookies for jwt
+   
         String token = null;
         if (request.getCookies() != null) {
             for (Cookie c : request.getCookies()) {
@@ -40,7 +40,7 @@ public class DebugController {
         out.put("cookiePresent", token != null);
         out.put("tokenLength", token != null ? token.length() : 0);
 
-        // 2) Try to validate token via TokenService
+
         String email = null;
         if (token != null) {
             try {
@@ -55,7 +55,7 @@ public class DebugController {
             out.put("tokenValid", false);
         }
 
-        // 3) Inspect SecurityContext
+  
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         out.put("securityContextAuthPresent", auth != null && auth.isAuthenticated());
         if (auth != null && auth.getPrincipal() != null) {
