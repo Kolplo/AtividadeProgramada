@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Aluno</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h1 th:text="${aluno.nome}"></h1>
+        
+        <div class="info-card">
+            <p><strong>Idade:</strong> <span th:text="${aluno.idade}"></span></p>
+            <p><strong>Série:</strong> <span th:text="${aluno.serie}"></span></p>
+            <p><strong>Responsável:</strong> <span th:text="${aluno.nomeresponsavel}"></span></p>
+            <p><strong>Contato:</strong> <span th:text="${aluno.contatoresponsavel}"></span></p>
+        </div>
+        
+        <div class="actions">
+            <a th:href="@{/aluno/editar/{id}(id=${aluno.id})}" class="btn btn-warning">Editar</a>
+            <button onclick="deleteAluno([${aluno.id}])" class="btn btn-danger">Deletar</button>
+            <a th:href="@{/aluno}" class="btn btn-secondary">Voltar</a>
+        </div>
+    </div>
+    
+    <script>
+        function deleteAluno(id) {
+            if (confirm('Tem certeza que deseja deletar este aluno?')) {
+                fetch('/aluno/' + id, {
+                    method: 'DELETE'
+                }).then(response => {
+                    if (response.ok) {
+                        window.location.href = '/aluno';
+                    } else {
+                        alert('Erro ao deletar aluno');
+                    }
+                }).catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao deletar aluno');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

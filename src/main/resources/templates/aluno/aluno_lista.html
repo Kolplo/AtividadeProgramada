@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Alunos</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', Arial, sans-serif; background: #f5f7fb; }
+        
+        .dashboard-container { display: flex; height: 100vh; }
+        
+        .sidebar {
+            width: 250px;
+            background: #2d3748;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header { font-size: 24px; font-weight: 700; margin-bottom: 30px; color: #4299e1; }
+        .sidebar nav ul { list-style: none; }
+        .sidebar nav li { margin-bottom: 12px; }
+        .sidebar nav a {
+            display: block;
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .sidebar nav a:hover { background: #4a5568; }
+        .sidebar nav a.active { background: #4299e1; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        
+        .top-bar {
+            background: white;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .top-bar h1 { font-size: 28px; color: #2d3748; }
+        .top-bar .user-info { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+        
+        .content { flex: 1; padding: 24px; overflow-y: auto; }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .stat-card-title { font-size: 14px; color: #718096; margin-bottom: 8px; }
+        .stat-card-value { font-size: 32px; font-weight: 700; color: #2d3748; }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .section-header h2 { font-size: 20px; color: #2d3748; }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary { background: #4299e1; color: white; }
+        .btn-primary:hover { background: #3182ce; }
+        .btn-secondary { background: #e2e8f0; color: #2d3748; }
+        .btn-secondary:hover { background: #cbd5e0; }
+        .btn-danger { background: #f56565; color: white; }
+        .btn-danger:hover { background: #e53e3e; }
+        .btn-warning { background: #ecc94b; color: #2d3748; }
+        .btn-warning:hover { background: #d6b928; }
+        
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .table-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: #f7fafc;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        th {
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        
+        tbody tr:hover { background: #f7fafc; }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-buttons a, .action-buttons button {
+            padding: 6px 10px;
+            font-size: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        
+        .action-buttons .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #718096;
+        }
+        
+        .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state-text { font-size: 16px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">AtivProg</div>
+            <nav>
+                <ul>
+                    <li><a href="/aluno" class="active">📚 Alunos</a></li>
+                    <li><a href="/atividade">📝 Atividades</a></li>
+                    <li><a href="/usuario">👤 Perfil</a></li>
+                    <li><a href="/logout" style="color: #f56565; margin-top: 20px;">🚪 Sair</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h1>Gerenciador de Alunos</h1>
+                <div class="user-info">
+                    <span th:text="'Bem-vindo, ' + ${#request.userPrincipal.principal.nome} + '!'"></span>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-card-title">Total de Alunos</div>
+                        <div class="stat-card-value" th:text="${alunos.size()}">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-title">Últimas Atividades</div>
+                        <div class="stat-card-value">--</div>
+                    </div>
+                </div>
+
+                <!-- Section -->
+                <div class="section-header">
+                    <h2>Meus Alunos</h2>
+                    <a th:href="@{/aluno/novo}" class="btn btn-primary">+ Novo Aluno</a>
+                </div>
+
+                <!-- Search -->
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Pesquisar alunos...">
+                    <button class="btn btn-secondary" onclick="searchAlunos()">🔍 Buscar</button>
+                </div>
+
+                <!-- Table -->
+                <div class="table-wrapper">
+                    <table th:if="${alunos.size() > 0}">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Idade</th>
+                                <th>Série</th>
+                                <th>Responsável</th>
+                                <th>Contato</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="aluno : ${alunos}">
+                                <td th:text="${aluno.nome}"></td>
+                                <td th:text="${aluno.idade}"></td>
+                                <td th:text="${aluno.serie}"></td>
+                                <td th:text="${aluno.nomeresponsavel}"></td>
+                                <td th:text="${aluno.contatoresponsavel}"></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a th:href="@{/aluno/{id}(id=${aluno.id})}" class="btn btn-primary">Ver</a>
+                                        <a th:href="@{/aluno/editar/{id}(id=${aluno.id})}" class="btn btn-warning">Editar</a>
+                                        <button th:attr="onclick=|deleteAluno(${aluno.id})|" class="btn btn-danger">Deletar</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div th:if="${alunos.size() == 0}" class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-text">Nenhum aluno cadastrado ainda</div>
+                        <a th:href="@{/aluno/novo}" class="btn btn-primary">Adicione um aluno agora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function deleteAluno(id) {
+            if (confirm('Tem certeza que deseja deletar este aluno?')) {
+                fetch('/aluno/' + id, { method: 'DELETE' })
+                    .then(r => r.ok ? location.reload() : alert('Erro ao deletar'))
+                    .catch(e => alert('Erro: ' + e.message));
+            }
+        }
+
+        function searchAlunos() {
+            const query = document.getElementById('searchInput').value;
+            if (query.trim()) {
+                window.location.href = '/aluno/search?nome=' + encodeURIComponent(query);
+            }
+        }
+    </script>
+</body>
+</html>

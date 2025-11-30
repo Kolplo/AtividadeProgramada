@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Atividades</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', Arial, sans-serif; background: #f5f7fb; }
+        
+        .dashboard-container { display: flex; height: 100vh; }
+        
+        .sidebar {
+            width: 250px;
+            background: #2d3748;
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header { font-size: 24px; font-weight: 700; margin-bottom: 30px; color: #4299e1; }
+        .sidebar nav ul { list-style: none; }
+        .sidebar nav li { margin-bottom: 12px; }
+        .sidebar nav a {
+            display: block;
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .sidebar nav a:hover { background: #4a5568; }
+        .sidebar nav a.active { background: #4299e1; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; }
+        
+        .top-bar {
+            background: white;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .top-bar h1 { font-size: 28px; color: #2d3748; }
+        .top-bar .user-info { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+        
+        .content { flex: 1; padding: 24px; overflow-y: auto; }
+        
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .stat-card-title { font-size: 14px; color: #718096; margin-bottom: 8px; }
+        .stat-card-value { font-size: 32px; font-weight: 700; color: #2d3748; }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .section-header h2 { font-size: 20px; color: #2d3748; }
+        
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary { background: #4299e1; color: white; }
+        .btn-primary:hover { background: #3182ce; }
+        .btn-secondary { background: #e2e8f0; color: #2d3748; }
+        .btn-secondary:hover { background: #cbd5e0; }
+        .btn-danger { background: #f56565; color: white; }
+        .btn-danger:hover { background: #e53e3e; }
+        
+        .form-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 14px;
+            color: #4a5568;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .timeline {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 20px;
+        }
+        
+        .timeline-item {
+            padding: 16px;
+            border-left: 4px solid #4299e1;
+            margin-bottom: 16px;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+        
+        .timeline-item-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .timeline-item-meta {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .timeline-item-description {
+            margin-top: 8px;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-pending { background: #fed7d7; color: #742a2a; }
+        .status-completed { background: #c6f6d5; color: #22543d; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">AtivProg</div>
+            <nav>
+                <ul>
+                    <li><a href="/aluno">📚 Alunos</a></li>
+                    <li><a href="/atividade" class="active">📝 Atividades</a></li>
+                    <li><a href="/usuario">👤 Perfil</a></li>
+                    <li><a href="/logout" style="color: #f56565; margin-top: 20px;">🚪 Sair</a></li>
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <h1>Gerenciador de Atividades</h1>
+                <div class="user-info">
+                    <span th:text="'Bem-vindo, ' + ${#request.userPrincipal.principal.nome} + '!'"></span>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content">
+                <!-- Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-card-title">Total de Atividades</div>
+                        <div class="stat-card-value">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-title">Concluídas</div>
+                        <div class="stat-card-value">--</div>
+                    </div>
+                </div>
+
+                <!-- Add Activity Form -->
+                <div class="form-card">
+                    <h2 style="margin-bottom: 16px; color: #2d3748;">📝 Adicionar Atividade</h2>
+                    <form id="form-atividade" onsubmit="addAtividade(event)">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div class="form-group">
+                                <label>Aluno</label>
+                                <select id="alunoSelect" required>
+                                    <option value="">Selecione um aluno...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Data</label>
+                                <input type="date" id="dataAtividade" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Descrição</label>
+                            <textarea id="descricaoAtividade" placeholder="Descreva a atividade..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">+ Adicionar Atividade</button>
+                    </form>
+                </div>
+
+                <!-- Activities Timeline -->
+                <div class="section-header">
+                    <h2>Atividades Recentes</h2>
+                </div>
+
+                <div class="timeline">
+                    <div th:if="${atividades == null or atividades.size() == 0}" class="empty-state">
+                        <div style="font-size: 48px; margin-bottom: 12px;">📭</div>
+                        <div>Nenhuma atividade registrada ainda</div>
+                    </div>
+                    <!-- Activities will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load alunos into select
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const response = await fetch('/aluno');
+                // Since we're on the atividade page, you might need to fetch alunos differently
+                // This is a placeholder; adjust the endpoint as needed
+            } catch (error) {
+                console.error('Error loading alunos:', error);
+            }
+        });
+
+        function addAtividade(event) {
+            event.preventDefault();
+            const alunoId = document.getElementById('alunoSelect').value;
+            const data = document.getElementById('dataAtividade').value;
+            const descricao = document.getElementById('descricaoAtividade').value;
+
+            const atividade = {
+                alunoId: alunoId,
+                descricao: descricao,
+                data: data,
+                status: 'Pendente'
+            };
+
+            // POST to create atividade
+            fetch('/atividade', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(atividade)
+            })
+            .then(r => r.ok ? location.reload() : alert('Erro ao adicionar atividade'))
+            .catch(e => alert('Erro: ' + e.message));
+        }
+    </script>
+</body>
+</html>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QualyMentos - Login</title>
+    <title>AtivProg - Login</title>
     <link rel="stylesheet" th:href="@{/css/style-auth.css}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
             <div class="auth-card">
 
                 <div class="auth-header">
-                    <span class="logo-text">QualyMentos</span>
+                    <span class="logo-text">AtivProg</span>
                     <h2>Acesse sua conta</h2>
                     <p>Bem-vindo de volta! Insira seus dados.</p>
                 </div>
@@ -48,7 +48,7 @@
             <div class="auth-card">
 
                 <div class="auth-header">
-                    <span class="logo-text">QualyMentos</span>
+                    <span class="logo-text">AtivProg</span>
                     <h2>Crie sua Conta</h2>
                     <p>Rastreie sua produção com facilidade.</p>
                 </div>
@@ -87,9 +87,10 @@
             const dadosC = Object.fromEntries(new FormData(formCadastro).entries());
 
             try {
-                const resp = await fetch("http://localhost:8080/auth/register", {
+                const resp = await fetch("/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    credentials: 'same-origin',
                     body: JSON.stringify(dadosC)
                 });
 
@@ -99,9 +100,10 @@
                         senha: dadosC.senha
                     };
 
-                    const loginResp = await fetch("http://localhost:8080/auth/login", {
+                    const loginResp = await fetch("/auth/login", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
+                        credentials: 'same-origin',
                         body: JSON.stringify(dadosLogin)
                     });
 
@@ -127,14 +129,15 @@
             e.preventDefault();
             const dadosL = Object.fromEntries(new FormData(formLogin).entries());
             try {
-                const resp = await fetch("http://localhost:8080/auth/login", {
+                const resp = await fetch("/auth/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    credentials: 'same-origin',
                     body: JSON.stringify(dadosL)
                 });
 
                 if (resp.ok) {
-                    window.location.href = "/usuario/propriedades";
+                    window.location.href = "/usuario";
                     formLogin.reset();
                 } else {
                     const erro = await resp.text();
