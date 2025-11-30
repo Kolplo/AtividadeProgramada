@@ -9,6 +9,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -49,6 +50,31 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping(value = "/register", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String registerForm(@org.springframework.web.bind.annotation.RequestParam String nome,
+                               @org.springframework.web.bind.annotation.RequestParam String email,
+                               @org.springframework.web.bind.annotation.RequestParam String senha,
+                               HttpServletResponse response) {
+        if (usuarioRepository.findByEmail(email).isPresent()) {
+            return "redirect:/auth?error=emailexists";
+        }
+
+        Usuario usuario = new Usuario();
+        usuario.setNome(nome);
+        usuario.setEmail(email);
+        usuario.setPassword(passwordEncoder.encode(senha));
+        usuarioRepository.save(usuario);
+
+        // auto-login: generate token and set cookie
+        String token = tokenService.generateToken(usuario);
+        Cookie cookie = new Cookie("jwt", token);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/");
+        response.addCookie(cookie);
+
+        return "redirect:/aluno";
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginUserRequestDTO dto, HttpServletResponse response) {
         try {
@@ -67,6 +93,28 @@ public class AuthController {
             return ResponseEntity.ok().build();
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(401).body("Credenciais inválidas");
+        }
+    }
+
+    @PostMapping(value = "/login", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String loginForm(@org.springframework.web.bind.annotation.RequestParam String email,
+                            @org.springframework.web.bind.annotation.RequestParam String senha,
+                            HttpServletResponse response) {
+        try {
+            var authToken = new UsernamePasswordAuthenticationToken(email, senha);
+            authenticationManager.authenticate(authToken);
+
+            Usuario usuario = usuarioRepository.findByEmail(email).orElseThrow();
+            String token = tokenService.generateToken(usuario);
+
+            Cookie cookie = new Cookie("jwt", token);
+            cookie.setHttpOnly(true);
+            cookie.setPath("/");
+            response.addCookie(cookie);
+
+            return "redirect:/aluno";
+        } catch (AuthenticationException ex) {
+            return "redirect:/auth?error=invalid";
         }
     }
 

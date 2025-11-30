@@ -22,7 +22,7 @@
                     <p>Bem-vindo de volta! Insira seus dados.</p>
                 </div>
 
-                <form id="form-login" class="auth-form">
+                <form id="form-login" class="auth-form" action="/auth/login" method="post">
                     <div class="form-group">
                         <label for="email">E-mail</label>
                         <input type="email" id="email" name="email" placeholder="seuemail@dominio.com" required>
@@ -53,7 +53,7 @@
                     <p>Rastreie sua produção com facilidade.</p>
                 </div>
 
-                <form id="form-Cadastro" class="auth-form">
+                <form id="form-Cadastro" class="auth-form" action="/auth/register" method="post">
                     <div class="form-group">
                         <label for="nome">Nome Completo</label>
                         <input type="text" id="nome" name="nome" placeholder="Seu nome completo" required>
@@ -80,78 +80,22 @@
         </div>
     </div>
     <script>
-        const formCadastro = document.getElementById('form-Cadastro');
-        formCadastro.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const dadosC = Object.fromEntries(new FormData(formCadastro).entries());
-
-            try {
-                const resp = await fetch("/auth/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: 'same-origin',
-                    body: JSON.stringify(dadosC)
-                });
-
-                if (resp.ok) {
-                    const dadosLogin = {
-                        email: dadosC.email,
-                        senha: dadosC.senha
-                    };
-
-                    const loginResp = await fetch("/auth/login", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        credentials: 'same-origin',
-                        body: JSON.stringify(dadosLogin)
-                    });
-
-                    if (loginResp.ok) {
-                        window.location.href = "/usuario/propriedades";
-                    } else {
-                        alert("Cadastro feito, mas houve erro ao entrar automaticamente. Faça login manualmente.");
-                        togglePage();
-                    }
-
-                    formCadastro.reset();
-                } else {
-                    const erro = await resp.text();
-                    alert("Erro ao cadastrar: " + erro);
-                }
-            } catch (err) {
-                alert("Erro de conexão com o servidor: " + err.message);
-            }
-        });
-
-        const formLogin = document.getElementById('form-login');
-        formLogin.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const dadosL = Object.fromEntries(new FormData(formLogin).entries());
-            try {
-                const resp = await fetch("/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: 'same-origin',
-                    body: JSON.stringify(dadosL)
-                });
-
-                if (resp.ok) {
-                    window.location.href = "/usuario";
-                    formLogin.reset();
-                } else {
-                    const erro = await resp.text();
-                    alert("Erro ao logar: " + erro);
-                }
-            } catch (err) {
-                alert("Erro de conexão com o servidor: " + err.message);
-            }
-        });
-
+        // Keep simple toggle behavior between login and register
         function togglePage() {
             document.getElementById("login-page").classList.toggle("hidden");
             document.getElementById("register-page").classList.toggle("hidden");
         }
+
+        // Show simple error messages if redirected with query params
+        (function showErrors() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('error') === 'invalid') {
+                alert('Credenciais inválidas. Tente novamente.');
+            }
+            if (params.get('error') === 'emailexists') {
+                alert('Email já cadastrado. Faça login ou use outro email.');
+            }
+        })();
     </script>
 
 </body>

@@ -8,6 +8,10 @@ import com.atividadeProgramada.AtividadeProgramada2.repository.AlunoRepository;
 import com.atividadeProgramada.AtividadeProgramada2.service.AtividadeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,6 +24,7 @@ import java.util.List;
 @RequestMapping("/atividade")
 @RequiredArgsConstructor
 public class AtividadeController {
+    private static final Logger logger = LoggerFactory.getLogger(AtividadeController.class);
     
     private final AtividadeService atividadeService;
     private final AlunoRepository alunoRepository;
@@ -32,33 +37,199 @@ public class AtividadeController {
         }
         Usuario usuario = (Usuario) authentication.getPrincipal();
         List<Aluno> alunos = alunoRepository.findByUsuario(usuario);
+        var atividades = atividadeRepository.findByUsuario(usuario);
+        logger.debug("[listarAtividades] usuario.id={} alunos.count={} atividades.count={}",
+                usuario != null ? usuario.getId() : null,
+                alunos != null ? alunos.size() : 0,
+                atividades != null ? atividades.size() : 0);
+        if (atividades != null) {
+            atividades.forEach(a -> logger.debug("[listarAtividades] atividade id={} aluno_id={} usuario_id={}", a.getId(), a.getAluno() != null ? a.getAluno().getId() : null, a.getUsuario() != null ? a.getUsuario().getId() : null));
+        }
         model.addAttribute("alunos", alunos);
-        model.addAttribute("atividades", atividadeRepository.findAll());
+        model.addAttribute("atividades", atividades);
+        // counts for dashboard
+        int total = atividades != null ? atividades.size() : 0;
+        long concluidas = 0;
+        if (atividades != null) {
+            concluidas = atividades.stream()
+                    .filter(a -> a.getStatus() != null && a.getStatus().toLowerCase().contains("concl"))
+                    .count();
+        }
+        model.addAttribute("totalAtividades", total);
+        model.addAttribute("concluidas", concluidas);
         return "atividade/atividade_lista";
+    }
+
+    // Debug endpoint: returns atividades for current user as JSON
+    @GetMapping("/debug/json")
+    @ResponseBody
+    public ResponseEntity<?> atividadesJson(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Usuário não autenticado");
+        }
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+        var atividades = atividadeRepository.findByUsuario(usuario);
+        return ResponseEntity.ok(atividades);
     }
     
     @PostMapping
     public ResponseEntity<?> criarAtividade(@RequestBody AtividadeRequest request, Authentication authentication) {
         Usuario usuario = (Usuario) authentication.getPrincipal();
-        
+        logger.debug("[criarAtividade] criando atividade para usuario.id={}", usuario != null ? usuario.getId() : null);
+
         Aluno aluno = alunoRepository.findById(Long.parseLong(request.alunoId))
             .orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
-        
+
         Atividade atividade = new Atividade();
         atividade.setAluno(aluno);
         atividade.setDescricao(request.descricao);
-        atividade.setData(LocalDateTime.parse(request.data));
+
+        // Parse date string safely: accept ISO_LOCAL_DATE (yyyy-MM-dd) or ISO_LOCAL_DATE_TIME
+        try {
+            if (request.data == null || request.data.isBlank()) {
+                atividade.setData(LocalDateTime.now());
+            } else {
+                // try parse as LocalDateTime first
+                try {
+                    atividade.setData(LocalDateTime.parse(request.data));
+                } catch (Exception e) {
+                    // fallback to parse as LocalDate and set start of day
+                    java.time.LocalDate ld = java.time.LocalDate.parse(request.data);
+                    atividade.setData(ld.atStartOfDay());
+                }
+            }
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body("Formato de data inválido: " + request.data);
+        }
+
         atividade.setStatus(request.status != null ? request.status : "Pendente");
         atividade.setUsuario(usuario);
-        
-        atividadeService.createAtividade(atividade);
+
+        Atividade saved = atividadeService.createAtividade(atividade);
+        logger.debug("[criarAtividade] atividade salva id={} usuarioId={}", saved != null ? saved.getId() : null, usuario != null ? usuario.getId() : null);
         return ResponseEntity.ok().build();
+    }
+
+    // Accept regular form submissions from the activity form (application/x-www-form-urlencoded)
+    @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String criarAtividadeForm(@RequestParam String alunoId,
+                                     @RequestParam String descricao,
+                                     @RequestParam(required = false) String data,
+                                     @RequestParam(required = false) String status,
+                                     Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/auth";
+        }
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+
+        Aluno aluno = alunoRepository.findById(Long.parseLong(alunoId))
+            .orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
+
+        Atividade atividade = new Atividade();
+        atividade.setAluno(aluno);
+        atividade.setDescricao(descricao);
+        try {
+            if (data == null || data.isBlank()) {
+                atividade.setData(LocalDateTime.now());
+            } else {
+                try {
+                    atividade.setData(LocalDateTime.parse(data));
+                } catch (Exception e) {
+                    java.time.LocalDate ld = java.time.LocalDate.parse(data);
+                    atividade.setData(ld.atStartOfDay());
+                }
+            }
+        } catch (Exception ex) {
+            return "redirect:/atividade?error=invalid_date";
+        }
+        atividade.setStatus(status != null ? status : "Pendente");
+        atividade.setUsuario(usuario);
+        atividadeService.createAtividade(atividade);
+        return "redirect:/atividade";
     }
     
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletarAtividade(@PathVariable Long id) {
         atividadeService.deleteAtividade(id);
         return ResponseEntity.ok().build();
+    }
+
+    // Temporary test endpoint to create a sample atividade for the authenticated user
+    @GetMapping("/test-create")
+    public ResponseEntity<?> testarCriacao(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body("Usuário não autenticado");
+        }
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+        // try to find any aluno for this user
+        var alunos = alunoRepository.findByUsuario(usuario);
+        if (alunos == null || alunos.isEmpty()) {
+            return ResponseEntity.badRequest().body("Usuário não possui alunos cadastrados para vincular a atividade");
+        }
+        Aluno aluno = alunos.get(0);
+        Atividade atividade = new Atividade();
+        atividade.setAluno(aluno);
+        atividade.setDescricao("Atividade de teste criada em " + java.time.LocalDateTime.now());
+        atividade.setData(java.time.LocalDateTime.now());
+        atividade.setStatus("Pendente");
+        atividade.setUsuario(usuario);
+        atividadeService.createAtividade(atividade);
+        return ResponseEntity.ok("Atividade de teste criada com sucesso");
+    }
+
+    @GetMapping("/editar/{id}")
+    public String editarAtividade(@PathVariable Long id, Authentication authentication, Model model) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/auth";
+        }
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+        Atividade atividade = atividadeService.getAtividadeById(id);
+        if (!atividade.getUsuario().getId().equals(usuario.getId())) {
+            return "redirect:/atividade?error=forbidden";
+        }
+
+        List<Aluno> alunos = alunoRepository.findByUsuario(usuario);
+        model.addAttribute("atividade", atividade);
+        model.addAttribute("alunos", alunos);
+        return "atividade/atividade_editar";
+    }
+
+    @PutMapping("/{id}")
+    public String atualizarAtividade(@PathVariable Long id, @RequestBody AtividadeRequest request, Authentication authentication) {
+        Usuario usuario = (Usuario) authentication.getPrincipal();
+        Atividade existing = atividadeService.getAtividadeById(id);
+        if (!existing.getUsuario().getId().equals(usuario.getId())) {
+            return "redirect:/atividade?error=forbidden";
+        }
+
+        Aluno aluno = alunoRepository.findById(Long.parseLong(request.alunoId))
+            .orElseThrow(() -> new RuntimeException("Aluno não encontrado"));
+
+        existing.setAluno(aluno);
+        existing.setDescricao(request.descricao);
+        try {
+            if (request.data == null || request.data.isBlank()) {
+                existing.setData(LocalDateTime.now());
+            } else {
+                try {
+                    existing.setData(LocalDateTime.parse(request.data));
+                } catch (Exception e) {
+                    java.time.LocalDate ld = java.time.LocalDate.parse(request.data);
+                    existing.setData(ld.atStartOfDay());
+                }
+            }
+        } catch (Exception ex) {
+            return "redirect:/atividade?error=invalid_date";
+        }
+        existing.setStatus(request.status != null ? request.status : existing.getStatus());
+        atividadeService.updateAtividade(existing);
+        return "redirect:/atividade";
+    }
+
+    @PostMapping("/{id}")
+    public String atualizarAtividadePost(@PathVariable Long id, @ModelAttribute("atividade") AtividadeRequest request, Authentication authentication) {
+        // delegate to PUT handler by converting AtividadeRequest to same structure
+        return atualizarAtividade(id, request, authentication);
     }
     
     // Request DTO

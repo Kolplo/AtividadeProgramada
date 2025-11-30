@@ -69,6 +69,13 @@ public class AlunoController {
         alunoService.updateAluno(dto, usuario);
         return "redirect:/aluno";
     }
+
+    // Support form submissions that post to the resource path (some setups don't convert _method)
+    @PostMapping("/{id}")
+    public String atualizarAlunoPost(@PathVariable Long id, @ModelAttribute UpdateAlunoRequestDTO dto,
+                                     Authentication authentication) {
+        return atualizarAluno(id, dto, authentication);
+    }
     
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletarAluno(@PathVariable Long id, Authentication authentication) {

@@ -18,8 +18,8 @@ public class UsuarioController {
 
     @GetMapping
     public String user() {
-      
-        return "aluno_lista";
+        // Redirect to the alunos listing which prepares the required model
+        return "ok";
     }
 
     @GetMapping("/dashboard")

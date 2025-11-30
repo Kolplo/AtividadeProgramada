@@ -13,4 +13,10 @@ public interface AtividadeRepository extends JpaRepository<Atividade, Long> {
     List<Atividade> findByAluno(Aluno aluno);
     
     List<Atividade> findByAlunoId(Long alunoId);
+    
+    List<Atividade> findByUsuario(com.atividadeProgramada.AtividadeProgramada2.entity.Usuario usuario);
+
+    List<Atividade> findByUsuarioId(Long usuarioId);
+    
+    List<Atividade> findByUsuarioIdOrderByDataDesc(Long usuarioId);
 }
